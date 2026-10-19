@@ -78,4 +78,55 @@ class RAGBase:
         prompt = self.build_prompt(query, search_results)
         answer = self.llm(prompt)
         return answer
-    
+
+class ElasticsearchIndex:
+
+    def __init__(self, es_client, index_name="faq-llm-zoomcamp"):
+        self.es_client = es_client
+        self.index_name = index_name
+
+    def search(
+        self,
+        query: str,
+        num_results: int = 5,
+        boost_dict: dict = None,
+        filter_dict: dict = None,
+    ):
+        # 1. Construction dynamique des champs avec leurs poids (boosts)
+        if boost_dict:
+            fields = []
+            for field, boost in boost_dict.items():
+                fields.append(f"{field}^{boost}")
+            # Si 'answer' n'est pas dans boost_dict, on l'ajoute sans boost explicite (poids = 1.0)
+            if "answer" not in boost_dict:
+                fields.append("answer")
+        else:
+            fields = ["question^3", "answer", "section^0.5"]
+
+        must_clause = [
+            {
+                "multi_match": {
+                    "query": query,
+                    "fields": fields,
+                    "type": "best_fields",
+                }
+            }
+        ]
+
+        # 2. Construction des filtres à partir du dictionnaire filter_dict
+        filter_clause = []
+        if filter_dict:
+            for key, value in filter_dict.items():
+                if value is not None:
+                    filter_clause.append({"term": {key: value}})
+
+        search_query = {
+            "size": num_results,
+            "query": {"bool": {"must": must_clause, "filter": filter_clause}},
+        }
+
+        response = self.es_client.search(
+            index=self.index_name, body=search_query
+        )
+
+        return [hit["_source"] for hit in response["hits"]["hits"]]
