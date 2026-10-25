@@ -36,7 +36,7 @@ def create_index_and_search(documents):
 
     fit = index.fit(documents)
 
-    search_results = index.search("lesson")
+    search_results = index.search(query="How does the agentic loop keep calling the model until it stops?")
 
     return search_results
 
@@ -97,3 +97,7 @@ query = "How does the agentic loop keep calling the model until it stops?"
 files = read_files_from_repo()
 documents = parse_files(files)
 print(f"Number of lesson pages in the dataset: {len(documents)}")
+
+# Homework question 2: Indexing and searching
+search_results = create_index_and_search(documents)
+print(f"For this query '{query}', the folder the LLM should look into is: {search_results[0]['filename']}")
