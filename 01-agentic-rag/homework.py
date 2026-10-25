@@ -122,16 +122,15 @@ answer, input_tokens = rag(query, documents)
 print(f"Answer for the query '{query}': {answer}")
 print("\n")
 
-# Homework question 4: Calculate cost of the RAG response
 print(f"Number of input tokens for the RAG response: {input_tokens}")
 print("\n")
       
-# Homework question 5: Chunking lesson pages
+# Homework question 4: Chunking lesson pages
 chunks = chunk_pages(documents)
 print(f"Number of chunks created from lesson pages: {len(chunks)}")
 print("\n")
 
-# Homework question 6: RAG with chunking
+# Homework question 5: RAG with chunking
 answer_w_chunks, input_tokens_w_chunks = rag(query, chunks)
 print(f"Answer for the query '{query}' with chunking: {answer_w_chunks}")
 print(f"Number of input tokens for the RAG response with chunking: {input_tokens_w_chunks}")
