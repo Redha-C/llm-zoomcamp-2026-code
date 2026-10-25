@@ -81,17 +81,25 @@ def openai_llm(prompt, model='gpt-5.4-mini'):
         input=input_messages
     )
 
-    return response.output_text
+    return response
 
 def rag(query):
+    # Step 1: Retrive data
     files = read_files_from_repo()
     documents = parse_files(files)
+
+    # Step 2: Create index and search + augment the context to the LLM
     search_results = create_index_and_search(documents)
     prompt = build_prompt(query, search_results)
-    answer = openai_llm(prompt)
-    return answer
-    
-query = "How does the agentic loop keep calling the model until it stops?"
+
+    # Step 3: Generate response using the augmented LLM
+    response = openai_llm(prompt)
+
+    # Retrieve the number of input tokens
+    input_tokens = response.usage.input_tokens
+
+    return response.output_text, input_tokens
+
 
 # Homework question 1: How many lesson pages are in the dataset? 
 files = read_files_from_repo()
@@ -100,4 +108,12 @@ print(f"Number of lesson pages in the dataset: {len(documents)}")
 
 # Homework question 2: Indexing and searching
 search_results = create_index_and_search(documents)
+query = "How does the agentic loop keep calling the model until it stops?"
 print(f"For this query '{query}', the folder the LLM should look into is: {search_results[0]['filename']}")
+
+# Homework question 3: RAG
+answer, input_tokens = rag(query)
+print(f"Answer for the query '{query}': {answer}")
+
+# Homework question 4: Calculate cost of the RAG response
+print(f"Number of input tokens for the RAG response: {input_tokens}")
