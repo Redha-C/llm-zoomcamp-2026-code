@@ -2,7 +2,7 @@ from gitsource import GithubRepositoryDataReader
 from dotenv import load_dotenv
 from openai import OpenAI
 from minsearch import Index
-from rag_helper import RAGBase
+from gitsource import chunk_documents
 
 ### RAG step 1: Retrieve data 
 # Function to read files from repo
@@ -101,19 +101,31 @@ def rag(query):
     return response.output_text, input_tokens
 
 
+def chunk_pages(documents, size=2000, step=1000):
+    chunks = chunk_documents(documents, size, step)
+    return chunks
+
 # Homework question 1: How many lesson pages are in the dataset? 
 files = read_files_from_repo()
 documents = parse_files(files)
 print(f"Number of lesson pages in the dataset: {len(documents)}")
+print("\n")
 
 # Homework question 2: Indexing and searching
 search_results = create_index_and_search(documents)
 query = "How does the agentic loop keep calling the model until it stops?"
 print(f"For this query '{query}', the folder the LLM should look into is: {search_results[0]['filename']}")
+print("\n")
 
 # Homework question 3: RAG
 answer, input_tokens = rag(query)
 print(f"Answer for the query '{query}': {answer}")
+print("\n")
 
 # Homework question 4: Calculate cost of the RAG response
 print(f"Number of input tokens for the RAG response: {input_tokens}")
+print("\n")
+      
+# Homework question 5: Chunking lesson pages
+chunks = chunk_pages(documents)
+print(f"Number of chunks created from lesson pages: {len(chunks)}")
