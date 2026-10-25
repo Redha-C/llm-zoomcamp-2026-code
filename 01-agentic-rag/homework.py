@@ -30,8 +30,8 @@ def parse_files(files):
 ### RAG step 2: Parse, index data and augment the context to the LLM
 def create_index_and_search(documents):
     index = Index(
-        text_fields=['filename', 'content'],
-        keyword_fields=['lesson']
+        text_fields=['content'],
+        keyword_fields=['filename']
     )
 
     fit = index.fit(documents)
@@ -91,6 +91,9 @@ def rag(query):
     answer = openai_llm(prompt)
     return answer
     
-query = "How many lesson pages?"
+query = "How does the agentic loop keep calling the model until it stops?"
 
-print(rag(query))
+# Homework question 1: How many lesson pages are in the dataset? 
+files = read_files_from_repo()
+documents = parse_files(files)
+print(f"Number of lesson pages in the dataset: {len(documents)}")
