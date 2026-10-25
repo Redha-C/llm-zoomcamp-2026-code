@@ -28,7 +28,7 @@ def parse_files(files):
     return documents
 
 ### RAG step 2: Parse, index data and augment the context to the LLM
-def create_index_and_search(documents):
+def create_index_and_search(documents, query):
     index = Index(
         text_fields=['content'],
         keyword_fields=['filename']
@@ -36,7 +36,7 @@ def create_index_and_search(documents):
 
     fit = index.fit(documents)
 
-    search_results = index.search(query="How does the agentic loop keep calling the model until it stops?")
+    search_results = index.search(query=query)
 
     return search_results
 
@@ -83,13 +83,13 @@ def openai_llm(prompt, model='gpt-5.4-mini'):
 
     return response
 
-def rag(query):
+def rag(query, documents):
     # Step 1: Retrive data
     files = read_files_from_repo()
     documents = parse_files(files)
 
     # Step 2: Create index and search + augment the context to the LLM
-    search_results = create_index_and_search(documents)
+    search_results = create_index_and_search(documents, query)
     prompt = build_prompt(query, search_results)
 
     # Step 3: Generate response using the augmented LLM
@@ -112,13 +112,13 @@ print(f"Number of lesson pages in the dataset: {len(documents)}")
 print("\n")
 
 # Homework question 2: Indexing and searching
-search_results = create_index_and_search(documents)
 query = "How does the agentic loop keep calling the model until it stops?"
+search_results = create_index_and_search(documents, query)
 print(f"For this query '{query}', the folder the LLM should look into is: {search_results[0]['filename']}")
 print("\n")
 
 # Homework question 3: RAG
-answer, input_tokens = rag(query)
+answer, input_tokens = rag(query, documents)
 print(f"Answer for the query '{query}': {answer}")
 print("\n")
 
@@ -129,3 +129,9 @@ print("\n")
 # Homework question 5: Chunking lesson pages
 chunks = chunk_pages(documents)
 print(f"Number of chunks created from lesson pages: {len(chunks)}")
+print("\n")
+
+# Homework question 6: RAG with chunking
+answer_w_chunks, input_tokens_w_chunks = rag(query, chunks)
+print(f"Answer for the query '{query}' with chunking: {answer_w_chunks}")
+print(f"Number of input tokens for the RAG response with chunking: {input_tokens_w_chunks}")
