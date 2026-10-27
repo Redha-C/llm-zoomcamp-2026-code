@@ -99,6 +99,38 @@ def chunk_pages(documents, size=2000, step=1000):
     chunks = chunk_documents(documents, size, step)
     return chunks
 
+def search_in_chuncks(query: str) -> str:
+    # Use the search function
+    results = create_index_and_search(documents=chunks, query=query)
+
+    # Format the result
+    context = ""
+    for result in results:
+        context += (
+            f"Filename: {result['filename']}\nContent: {result['content']}\n\n"
+        )
+    return context
+
+def agent(function, function_schema, prompt, model="gpt-5.4-mini"):
+    agent_tools = Tools()
+    agent_tools.add_tool(function, function_schema)
+    chat_interface = IPythonChatInterface()
+    callback = DisplayingRunnerCallback(chat_interface)
+
+    runner = OpenAIResponsesRunner(
+        tools=agent_tools,
+        developer_prompt=instructions,
+        chat_interface=chat_interface,
+        llm_client=OpenAIClient(model="gpt-5.4-mini")
+    )
+
+    result = runner.loop(
+        prompt=prompt,
+        callback=callback,
+    )
+    
+    return result
+
 # Define base instructions and prompt for the LLM
 instructions = """
 Your task is to answer questions from the course participants
@@ -141,3 +173,41 @@ print(f"Answer for the query '{query}' with chunking: {answer_w_chunks}")
 print(f"Number of input tokens for the RAG response with chunking: {input_tokens_w_chunks}")
 
 # Homework question 6: Agent
+search_tool = {
+    "type": "function",
+    "name": "search_in_chuncks",
+    "description": "Search the repository lesson chunks for entries matching the given query.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "query": {
+                "type": "string",
+                "description": "Search query text to look up in the repo chunks."
+            }
+        },
+        "required": ["query"],
+        "additionalProperties": False
+    }
+}
+
+prompt = "How does the agentic loop work, and how is it different from plain RAG?"
+result = agent(function=search_in_chuncks, function_schema=search_tool, prompt=prompt)
+
+# Nombre de fois où l'agent a appelé l'outil 'search_in_chuncks'
+search_call_count = sum(
+    1
+    for msg in result.all_messages
+    if getattr(msg, "type", None) == "function_call"
+    or hasattr(msg, "arguments")
+)
+
+print("\n" + "=" * 50)
+print("AGENT FINAL ANSWER:")
+print("=" * 50)
+print(result.last_message)
+
+print("\n" + "=" * 50)
+print("METRICS:")
+print("=" * 50)
+print(f"Total Cost: ${result.cost.total_cost:.6f}")
+print(f"Number of times the agent called search: {search_call_count}")
