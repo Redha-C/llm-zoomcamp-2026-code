@@ -4,6 +4,11 @@ from openai import OpenAI
 from minsearch import Index
 from gitsource import chunk_documents
 
+from toyaikit.llm import OpenAIClient
+from toyaikit.tools import Tools
+from toyaikit.chat import IPythonChatInterface
+from toyaikit.chat.runners import OpenAIResponsesRunner, DisplayingRunnerCallback
+
 ### RAG step 1: Retrieve data 
 # Function to read files from repo
 def read_files_from_repo(): 
@@ -59,7 +64,7 @@ def build_prompt(question, search_results):
     return prompt.strip()
 
 # Function to set up GPT model
-def openai_llm(instructions, prompt, model='gpt-5.4-mini', use_tools=False):
+def openai_llm(instructions, prompt, model='gpt-5.4-mini'):
     openai_client = OpenAI()
 
     input_messages = [
@@ -67,21 +72,14 @@ def openai_llm(instructions, prompt, model='gpt-5.4-mini', use_tools=False):
         {"role": "user", "content": prompt}
     ]
 
-    if use_tools==True:
-        response = openai_client.responses.create(
-            model='gpt-5.4-mini',
-            input=input_messages,
-            tools=[search_tool]
-        )
-    else:
-        response = openai_client.responses.create(
-            model='gpt-5.4-mini',
-            input=input_messages
-        )
+    response = openai_client.responses.create(
+        model='gpt-5.4-mini',
+        input=input_messages
+    )
 
     return response
 
-def rag(query, documents, make_agent=False):
+def rag(query, documents):
     # Step 1: Retrive data
     files = read_files_from_repo()
     documents = parse_files(files)
@@ -90,11 +88,7 @@ def rag(query, documents, make_agent=False):
     search_results = create_index_and_search(documents, query)
     prompt = build_prompt(query, search_results)
 
-    if make_agent==True:
-        # Step 3: Generate response using the augmented LLM
-        response = openai_llm(instructions, prompt, use_tools=True)
-    else:
-        response = openai_llm(instructions, prompt)
+    response = openai_llm(instructions, prompt)
 
     # Retrieve the number of input tokens
     input_tokens = response.usage.input_tokens
@@ -147,31 +141,3 @@ print(f"Answer for the query '{query}' with chunking: {answer_w_chunks}")
 print(f"Number of input tokens for the RAG response with chunking: {input_tokens_w_chunks}")
 
 # Homework question 6: Agent
-instructions = """
-You're a course teaching assistant. Answer the student's question 
-using the search tool. 
-Make multiple searches with different keywords before answering.
-"""
-
-query = "How does the agentic loop work, and how is it different from plain RAG?"
-
-search_tool = {
-    "type": "function",
-    "name": "create_index_and_search",
-    "description": "Search the repo files for entries matching the given query.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "query": {
-                "type": "string",
-                "description": "Search query text to look up in the repo file."
-            }
-        },
-        "required": ["documents","query"],
-        "additionalProperties": False
-    }
-}
-
-answer_w_agent, input_tokens_w_agent = rag(query, chunks, make_agent=True)
-print(f"Answer for the query '{query}' using an agent: {answer_w_agent}")
-
